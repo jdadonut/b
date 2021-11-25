@@ -2,6 +2,8 @@ using System.IO;
 using System;
 using System.Text;
 using b.Extensions;
+using b;
+using b.Util;
 
 namespace b.Interface
 {
@@ -9,12 +11,15 @@ namespace b.Interface
     {
         public static void WriteImage(string filePath)
         {
+            WindowUtil.Update();
+            // Stream stdout = File.OpenWrite("code_output.txt");
             Stream stdout = Console.OpenStandardOutput();
-            using var f = File.Open(filePath, FileMode.Open, FileAccess.Read);
-            string controlKey; // \\033
+            using var f = File.Open(filePath, new FileStreamOptions());
             byte[] last = Array.Empty<byte>();
             bool first = false;
             bool flushed = false;
+            byte[] ControlKey = new byte[]{0x1B};
+            // byte[] ControlKey = Encoding.UTF8.GetBytes("033");
             foreach (byte[] payloadBuffer in f.GetBase64ByteEnumerable(4096) ) // asserts it exists
             {
                 // write payload to stream, then push payload to stdout (and flush?)
@@ -24,33 +29,33 @@ namespace b.Interface
                     last = payloadBuffer;
                     continue;
                 }
-                stdout.WriteByte(0x1B);
+                stdout.Write(ControlKey);
                 stdout.Write(Encoding.UTF8.GetBytes("_G"));
                 if (first)
                 {
                     first = false;
-                    stdout.Write(Encoding.UTF8.GetBytes("a=T,f=100,m=1;")); // headers for graphics protocol first payload
+                    stdout.Write(Encoding.UTF8.GetBytes("m=1,a=T,f=100;")); // headers for graphics protocol first payload
                 }
                 else
                 {
                     stdout.Write(Encoding.UTF8.GetBytes("m=1;"));
                 }
                 stdout.Write(last);
-                stdout.WriteByte(0x1B);
-                stdout.Write(Encoding.UTF8.GetBytes("\\\n"));
+                stdout.Write(ControlKey);
+                stdout.Write(Encoding.UTF8.GetBytes("\\"));
                 last = payloadBuffer;
                 stdout.Flush();
                 flushed = true;
             }
             // deal with last payload
 
-            stdout.WriteByte(0x1B);
+            stdout.Write(ControlKey);
             stdout.Write(Encoding.UTF8.GetBytes("_G"));
             if (!flushed) stdout.Write(Encoding.UTF8.GetBytes("a=T,f=100,m=0;")); // headers for graphics protocol first payload
-            else stdout.Write(Encoding.UTF8.GetBytes("m=1;"));
+            else stdout.Write(Encoding.UTF8.GetBytes("m=0;"));
             stdout.Write(last);
-            stdout.WriteByte(0x1B);
-            stdout.Write(Encoding.UTF8.GetBytes("\\\n"));
+            stdout.Write(ControlKey);
+            stdout.Write(Encoding.UTF8.GetBytes("\\"));
             stdout.Flush();
 
         }

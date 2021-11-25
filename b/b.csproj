@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dandy.Linux" Version="1.0.0-b1" />
+    <PackageReference Include="IronPython" Version="3.4.0-alpha1" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />
   </ItemGroup>
 
